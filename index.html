@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IV and PV Curves Project</title>
-
-  <!-- Google Fonts and Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <title>Solar Cell Analysis Tool</title>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-
+  
   <style>
     * {
       margin: 0;
@@ -18,349 +17,578 @@
     }
 
     body {
-      background-color: #0d1117;
-      color: #e6edf3;
-      font-family: 'Poppins', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
       padding: 40px 20px;
-    }
-
-    h1 {
-      font-weight: 600;
-      font-size: 2.2rem;
-      margin-bottom: 10px;
-      color: #58a6ff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-align: center;
-    }
-
-    p {
-      font-size: 1rem;
-      color: #8b949e;
-      margin-bottom: 30px;
-      text-align: center;
-      max-width: 600px;
+      color: #333;
     }
 
     .container {
-      background: #161b22;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.3);
-      width: 100%;
-      max-width: 900px;
-      text-align: center;
-      margin-bottom: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
-    .input-group {
+    .header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header p {
+      font-size: 1.2rem;
+      color: rgba(255,255,255,0.9);
+      font-weight: 400;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    @media (max-width: 968px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .upload-section {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .upload-options {
       display: flex;
-      justify-content: center;
-      align-items: center;
       gap: 15px;
+      margin-bottom: 30px;
+      justify-content: center;
+    }
+
+    .upload-option {
+      padding: 12px 24px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+      color: #4a5568;
+    }
+
+    .upload-option.active {
+      border-color: #667eea;
+      background: #667eea;
+      color: white;
+    }
+
+    .upload-option:hover {
+      border-color: #667eea;
+    }
+
+    .drop-zone {
+      border: 2px dashed #cbd5e0;
+      border-radius: 16px;
+      padding: 60px 40px;
+      text-align: center;
+      background: #f7fafc;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 30px;
+    }
+
+    .drop-zone:hover {
+      border-color: #667eea;
+      background: #edf2f7;
+    }
+
+    .drop-zone i {
+      font-size: 3rem;
+      color: #a0aec0;
       margin-bottom: 20px;
-      flex-wrap: wrap;
     }
 
-    input[type="file"] {
-      background-color: #0d1117;
-      color: #e6edf3;
-      border: 1px solid #30363d;
-      padding: 10px 15px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: 'Poppins', sans-serif;
+    .drop-zone h3 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 10px;
     }
 
-    button {
-      background-color: #238636;
-      color: #fff;
-      border: none;
-      padding: 10px 25px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: 'Poppins', sans-serif;
+    .drop-zone p {
+      color: #718096;
       font-size: 1rem;
-      transition: background 0.2s;
     }
 
-    button:hover {
-      background-color: #2ea043;
+    .file-input {
+      display: none;
     }
 
-    .charts-container {
-      display: flex;
-      flex-direction: column;
-      gap: 30px;
-      width: 100%;
-    }
-
-    .chart-wrapper {
-      background: #0d1117;
-      border-radius: 10px;
+    .file-info {
+      background: #edf2f7;
+      border-radius: 12px;
       padding: 20px;
-      border: 1px solid #30363d;
+      margin-bottom: 30px;
     }
 
-    canvas {
-      width: 100% !important;
-      height: 300px !important;
+    .file-info h4 {
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 15px;
     }
 
-    footer {
+    .file-tips {
+      list-style: none;
+    }
+
+    .file-tips li {
+      padding: 8px 0;
+      color: #4a5568;
+      position: relative;
+      padding-left: 20px;
+    }
+
+    .file-tips li:before {
+      content: "•";
+      color: #667eea;
+      position: absolute;
+      left: 0;
+      font-weight: bold;
+    }
+
+    .graph-section {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .graph-placeholder {
+      background: #f7fafc;
+      border: 2px dashed #e2e8f0;
+      border-radius: 16px;
+      height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a0aec0;
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+    }
+
+    .graph-controls {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 12px 30px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5a6fd8;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e0;
+    }
+
+    .results-section {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .parameters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
       margin-top: 20px;
-      font-size: 0.9rem;
-      color: #8b949e;
+    }
+
+    .parameter-card {
+      background: #f7fafc;
+      border-radius: 12px;
+      padding: 20px;
       text-align: center;
     }
 
-    @media (max-width: 768px) {
-      .container {
-        padding: 20px;
-      }
-      
-      h1 {
-        font-size: 1.8rem;
-      }
-      
-      .input-group {
-        flex-direction: column;
-      }
+    .parameter-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #667eea;
+      margin: 10px 0;
+    }
+
+    .parameter-name {
+      color: #718096;
+      font-size: 0.9rem;
+    }
+
+    /* Icon styles */
+    .icon {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    .upload-icon:before {
+      content: "📤";
+    }
+
+    .file-icon:before {
+      content: "📄";
+    }
+
+    .graph-icon:before {
+      content: "📊";
     }
   </style>
 </head>
 <body>
-  <h1><i data-lucide="activity"></i> IV and PV Curves Project</h1>
-  <p>Upload your CSV file or use default data to visualize IV and PV relationships.</p>
-
   <div class="container">
-    <div class="input-group">
-      <input type="file" id="fileInput" accept=".csv">
-      <button onclick="generateGraphs()">Plot Graphs</button>
+    <div class="header">
+      <h1>Solar Cell Analysis Tool</h1>
+      <p>Interactive analysis of I-V characteristics and parameter extraction</p>
     </div>
 
-    <div class="charts-container">
-      <div class="chart-wrapper">
-        <canvas id="ivCurve"></canvas>
+    <div class="main-content">
+      <!-- Upload Section -->
+      <div class="upload-section">
+        <h2 class="section-title">Upload or Input Solar Cell Data</h2>
+        <p style="text-align: center; color: #718096; margin-bottom: 30px;">
+          Provide I-V characteristic data for analysis
+        </p>
+
+        <div class="upload-options">
+          <div class="upload-option active" onclick="setUploadType('file')">
+            <span class="icon upload-icon"></span>
+            Upload PDF/CSV
+          </div>
+          <div class="upload-option" onclick="setUploadType('manual')">
+            <span class="icon file-icon"></span>
+            Manual Input
+          </div>
+        </div>
+
+        <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+          <i>📁</i>
+          <h3>Click to browse or drag and drop</h3>
+          <p>PDF, CSV or TXT files supported</p>
+        </div>
+
+        <input type="file" id="fileInput" class="file-input" accept=".pdf,.csv,.txt">
+
+        <div style="text-align: center; margin: 30px 0;">
+          <div style="color: #718096; font-size: 0.9rem; margin-bottom: 10px;">--- or ---</div>
+          <button class="btn btn-secondary" onclick="useSampleData()">
+            Use Sample Data
+          </button>
+        </div>
+
+        <div class="file-info">
+          <h4>File Format Tips:</h4>
+          <ul class="file-tips">
+            <li>CSV: Each line should have Voltage, Current values separated by comma</li>
+            <li>TXT: Space or comma separated values work</li>
+            <li>PDF: Must contain numerical data in tabular format</li>
+          </ul>
+        </div>
       </div>
-      <div class="chart-wrapper">
-        <canvas id="pvCurve"></canvas>
+
+      <!-- Graph Section -->
+      <div class="graph-section">
+        <h2 class="section-title">I-V & P-V Characteristics</h2>
+        <div class="graph-placeholder" id="graphPlaceholder">
+          Upload data to visualize graphs
+        </div>
+        <div class="graph-controls">
+          <button class="btn btn-primary" onclick="analyzeData()">
+            Analyze Data
+          </button>
+          <button class="btn btn-secondary" onclick="clearData()">
+            Clear
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="results-section">
+      <h2 class="section-title">Extracted Parameters</h2>
+      <div class="parameters-grid">
+        <div class="parameter-card">
+          <div class="parameter-name">Short Circuit Current (I<sub>sc</sub>)</div>
+          <div class="parameter-value" id="iscValue">--</div>
+          <div class="parameter-unit">A</div>
+        </div>
+        <div class="parameter-card">
+          <div class="parameter-name">Open Circuit Voltage (V<sub>oc</sub>)</div>
+          <div class="parameter-value" id="vocValue">--</div>
+          <div class="parameter-unit">V</div>
+        </div>
+        <div class="parameter-card">
+          <div class="parameter-name">Maximum Power (P<sub>max</sub>)</div>
+          <div class="parameter-value" id="pmaxValue">--</div>
+          <div class="parameter-unit">W</div>
+        </div>
+        <div class="parameter-card">
+          <div class="parameter-name">Fill Factor (FF)</div>
+          <div class="parameter-value" id="ffValue">--</div>
+          <div class="parameter-unit">%</div>
+        </div>
+        <div class="parameter-card">
+          <div class="parameter-name">Efficiency (η)</div>
+          <div class="parameter-value" id="efficiencyValue">--</div>
+          <div class="parameter-unit">%</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <footer>Developed by Anish Raj | Mini Project</footer>
-
   <script>
-    // Initialize Lucide icons
-    lucide.createIcons();
+    let currentUploadType = 'file';
+    let chart = null;
 
-    let ivChart = null;
-    let pvChart = null;
-
-    function generateGraphs() {
-      const ivCtx = document.getElementById('ivCurve').getContext('2d');
-      const pvCtx = document.getElementById('pvCurve').getContext('2d');
-
-      // Sample data
-      const voltage = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
-      const current = [5.0, 4.8, 4.5, 4.0, 3.2, 2.0, 1.5, 1.0, 0.5, 0.2, 0.0];
-      const power = voltage.map((v, i) => v * current[i]);
-
-      // Destroy existing charts if they exist
-      if (ivChart) {
-        ivChart.destroy();
-      }
-      if (pvChart) {
-        pvChart.destroy();
-      }
-
-      // IV Curve Chart
-      ivChart = new Chart(ivCtx, {
-        type: 'line',
-        data: {
-          labels: voltage,
-          datasets: [{
-            label: 'Current (A)',
-            data: current,
-            borderColor: '#58a6ff',
-            backgroundColor: 'rgba(88, 166, 255, 0.1)',
-            borderWidth: 3,
-            tension: 0.4,
-            fill: true,
-            pointBackgroundColor: '#58a6ff',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2,
-            pointRadius: 5
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            title: {
-              display: true,
-              text: 'IV Characteristics Curve',
-              color: '#e6edf3',
-              font: { 
-                size: 18,
-                weight: '600'
-              },
-              padding: 20
-            },
-            legend: {
-              labels: { 
-                color: '#e6edf3',
-                font: { size: 14 }
-              }
-            },
-            tooltip: {
-              backgroundColor: 'rgba(13, 17, 23, 0.9)',
-              titleColor: '#58a6ff',
-              bodyColor: '#e6edf3',
-              borderColor: '#30363d',
-              borderWidth: 1
-            }
-          },
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: 'Voltage (V)',
-                color: '#8b949e',
-                font: { size: 14, weight: '600' }
-              },
-              ticks: { 
-                color: '#8b949e',
-                font: { size: 12 }
-              },
-              grid: { 
-                color: 'rgba(139, 148, 158, 0.2)',
-                borderColor: 'rgba(139, 148, 158, 0.5)'
-              }
-            },
-            y: {
-              title: {
-                display: true,
-                text: 'Current (A)',
-                color: '#8b949e',
-                font: { size: 14, weight: '600' }
-              },
-              ticks: { 
-                color: '#8b949e',
-                font: { size: 12 }
-              },
-              grid: { 
-                color: 'rgba(139, 148, 158, 0.2)',
-                borderColor: 'rgba(139, 148, 158, 0.5)'
-              }
-            }
-          }
-        }
+    function setUploadType(type) {
+      currentUploadType = type;
+      document.querySelectorAll('.upload-option').forEach(opt => {
+        opt.classList.remove('active');
       });
+      event.target.classList.add('active');
+    }
 
-      // PV Curve Chart
-      pvChart = new Chart(pvCtx, {
+    function useSampleData() {
+      // Sample solar cell data
+      const sampleData = {
+        voltage: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.55, 0.6, 0.62],
+        current: [3.2, 3.15, 3.1, 3.0, 2.8, 2.2, 1.5, 0.8, 0.0]
+      };
+      
+      processData(sampleData);
+      updateGraph(sampleData);
+      calculateParameters(sampleData);
+      
+      document.getElementById('graphPlaceholder').style.display = 'none';
+    }
+
+    function analyzeData() {
+      if (currentUploadType === 'file') {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length === 0) {
+          alert('Please select a file first or use sample data.');
+          return;
+        }
+        // Here you would process the actual file
+        alert('File processing would happen here. Using sample data for demo.');
+        useSampleData();
+      } else {
+        alert('Manual input interface would open here. Using sample data for demo.');
+        useSampleData();
+      }
+    }
+
+    function clearData() {
+      if (chart) {
+        chart.destroy();
+        chart = null;
+      }
+      document.getElementById('graphPlaceholder').style.display = 'flex';
+      resetParameters();
+    }
+
+    function processData(data) {
+      // Simulate data processing
+      console.log('Processing data:', data);
+    }
+
+    function updateGraph(data) {
+      const ctx = document.createElement('canvas');
+      ctx.width = 800;
+      ctx.height = 400;
+      
+      const graphContainer = document.getElementById('graphPlaceholder');
+      graphContainer.innerHTML = '';
+      graphContainer.appendChild(ctx);
+
+      // Calculate power values
+      const power = data.voltage.map((v, i) => v * data.current[i]);
+
+      chart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: voltage,
-          datasets: [{
-            label: 'Power (W)',
-            data: power,
-            borderColor: '#ff6b6b',
-            backgroundColor: 'rgba(255, 107, 107, 0.1)',
-            borderWidth: 3,
-            tension: 0.4,
-            fill: true,
-            pointBackgroundColor: '#ff6b6b',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2,
-            pointRadius: 5
-          }]
+          labels: data.voltage,
+          datasets: [
+            {
+              label: 'Current (A)',
+              data: data.current,
+              borderColor: '#667eea',
+              backgroundColor: 'rgba(102, 126, 234, 0.1)',
+              yAxisID: 'y',
+              tension: 0.4
+            },
+            {
+              label: 'Power (W)',
+              data: power,
+              borderColor: '#ff6b6b',
+              backgroundColor: 'rgba(255, 107, 107, 0.1)',
+              yAxisID: 'y1',
+              tension: 0.4
+            }
+          ]
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            title: {
-              display: true,
-              text: 'PV Characteristics Curve',
-              color: '#e6edf3',
-              font: { 
-                size: 18,
-                weight: '600'
-              },
-              padding: 20
-            },
-            legend: {
-              labels: { 
-                color: '#e6edf3',
-                font: { size: 14 }
-              }
-            },
-            tooltip: {
-              backgroundColor: 'rgba(13, 17, 23, 0.9)',
-              titleColor: '#ff6b6b',
-              bodyColor: '#e6edf3',
-              borderColor: '#30363d',
-              borderWidth: 1
-            }
+          interaction: {
+            mode: 'index',
+            intersect: false,
           },
           scales: {
             x: {
               title: {
                 display: true,
-                text: 'Voltage (V)',
-                color: '#8b949e',
-                font: { size: 14, weight: '600' }
-              },
-              ticks: { 
-                color: '#8b949e',
-                font: { size: 12 }
-              },
-              grid: { 
-                color: 'rgba(139, 148, 158, 0.2)',
-                borderColor: 'rgba(139, 148, 158, 0.5)'
+                text: 'Voltage (V)'
               }
             },
             y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
               title: {
                 display: true,
-                text: 'Power (W)',
-                color: '#8b949e',
-                font: { size: 14, weight: '600' }
-              },
-              ticks: { 
-                color: '#8b949e',
-                font: { size: 12 }
-              },
-              grid: { 
-                color: 'rgba(139, 148, 158, 0.2)',
-                borderColor: 'rgba(139, 148, 158, 0.5)'
+                text: 'Current (A)'
               }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Power (W)'
+              },
+              grid: {
+                drawOnChartArea: false,
+              },
             }
           }
         }
       });
     }
 
-    // Generate graphs when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-      generateGraphs();
-    });
+    function calculateParameters(data) {
+      // Calculate solar cell parameters
+      const isc = Math.max(...data.current); // Short circuit current
+      const voc = Math.max(...data.voltage); // Open circuit voltage
+      const power = data.voltage.map((v, i) => v * data.current[i]);
+      const pmax = Math.max(...power); // Maximum power
+      const ff = (pmax / (isc * voc) * 100).toFixed(1); // Fill factor
+      const efficiency = (pmax / (0.1 * 1000) * 100).toFixed(1); // Assuming 1000 W/m², 0.1 m² cell
 
-    // Handle file upload
+      // Update UI
+      document.getElementById('iscValue').textContent = isc.toFixed(2);
+      document.getElementById('vocValue').textContent = voc.toFixed(2);
+      document.getElementById('pmaxValue').textContent = pmax.toFixed(2);
+      document.getElementById('ffValue').textContent = ff;
+      document.getElementById('efficiencyValue').textContent = efficiency;
+    }
+
+    function resetParameters() {
+      document.getElementById('iscValue').textContent = '--';
+      document.getElementById('vocValue').textContent = '--';
+      document.getElementById('pmaxValue').textContent = '--';
+      document.getElementById('ffValue').textContent = '--';
+      document.getElementById('efficiencyValue').textContent = '--';
+    }
+
+    // Handle file input change
     document.getElementById('fileInput').addEventListener('change', function(event) {
       const file = event.target.files[0];
       if (file) {
-        // Here you can add code to parse CSV file and update charts
-        console.log('File selected:', file.name);
-        alert('File uploaded: ' + file.name + '\nCSV parsing functionality can be added here.');
+        const fileName = file.name;
+        const fileExtension = fileName.split('.').pop().toLowerCase();
+        
+        if (['csv', 'txt', 'pdf'].includes(fileExtension)) {
+          document.querySelector('.drop-zone h3').textContent = `Selected: ${fileName}`;
+          document.querySelector('.drop-zone p').textContent = 'Click "Analyze Data" to process';
+        } else {
+          alert('Please select a CSV, TXT, or PDF file.');
+          event.target.value = '';
+        }
+      }
+    });
+
+    // Drag and drop functionality
+    const dropZone = document.querySelector('.drop-zone');
+    dropZone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      dropZone.style.borderColor = '#667eea';
+      dropZone.style.background = '#e2e8f0';
+    });
+
+    dropZone.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      dropZone.style.borderColor = '#cbd5e0';
+      dropZone.style.background = '#f7fafc';
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      dropZone.style.borderColor = '#cbd5e0';
+      dropZone.style.background = '#f7fafc';
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        const file = files[0];
+        const fileName = file.name;
+        const fileExtension = fileName.split('.').pop().toLowerCase();
+        
+        if (['csv', 'txt', 'pdf'].includes(fileExtension)) {
+          document.getElementById('fileInput').files = files;
+          document.querySelector('.drop-zone h3').textContent = `Selected: ${fileName}`;
+          document.querySelector('.drop-zone p').textContent = 'Click "Analyze Data" to process';
+        } else {
+          alert('Please drop a CSV, TXT, or PDF file.');
+        }
       }
     });
   </script>
