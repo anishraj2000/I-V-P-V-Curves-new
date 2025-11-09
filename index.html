@@ -181,9 +181,9 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
 
-    .graph-placeholder {
+    .graph-container {
       background: #f7fafc;
-      border: 2px dashed #e2e8f0;
+      border: 2px solid #e2e8f0;
       border-radius: 16px;
       height: 400px;
       display: flex;
@@ -192,6 +192,14 @@
       color: #a0aec0;
       font-size: 1.1rem;
       margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #chartContainer {
+      width: 100%;
+      height: 100%;
+      padding: 20px;
     }
 
     .graph-controls {
@@ -248,6 +256,7 @@
       border-radius: 12px;
       padding: 20px;
       text-align: center;
+      border: 1px solid #e2e8f0;
     }
 
     .parameter-value {
@@ -262,25 +271,50 @@
       font-size: 0.9rem;
     }
 
-    /* Icon styles */
-    .icon {
-      display: inline-block;
-      width: 24px;
-      height: 24px;
-      margin-right: 8px;
-      vertical-align: middle;
+    .parameter-unit {
+      color: #a0aec0;
+      font-size: 0.8rem;
     }
 
-    .upload-icon:before {
-      content: "📤";
+    /* Manual input modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
     }
 
-    .file-icon:before {
-      content: "📄";
+    .modal-content {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
     }
 
-    .graph-icon:before {
-      content: "📊";
+    .data-input {
+      width: 100%;
+      height: 200px;
+      padding: 15px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-family: monospace;
+      resize: vertical;
+      margin-bottom: 20px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: flex-end;
     }
   </style>
 </head>
@@ -300,20 +334,20 @@
         </p>
 
         <div class="upload-options">
-          <div class="upload-option active" onclick="setUploadType('file')">
+          <div class="upload-option active" id="uploadOptionFile" onclick="setUploadType('file')">
             <span class="icon upload-icon"></span>
             Upload PDF/CSV
           </div>
-          <div class="upload-option" onclick="setUploadType('manual')">
+          <div class="upload-option" id="uploadOptionManual" onclick="setUploadType('manual')">
             <span class="icon file-icon"></span>
             Manual Input
           </div>
         </div>
 
-        <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+        <div class="drop-zone" onclick="handleFileUploadClick()" id="dropZone">
           <i>📁</i>
-          <h3>Click to browse or drag and drop</h3>
-          <p>PDF, CSV or TXT files supported</p>
+          <h3 id="dropZoneTitle">Click to browse or drag and drop</h3>
+          <p id="dropZoneSubtitle">PDF, CSV or TXT files supported</p>
         </div>
 
         <input type="file" id="fileInput" class="file-input" accept=".pdf,.csv,.txt">
@@ -338,8 +372,10 @@
       <!-- Graph Section -->
       <div class="graph-section">
         <h2 class="section-title">I-V & P-V Characteristics</h2>
-        <div class="graph-placeholder" id="graphPlaceholder">
-          Upload data to visualize graphs
+        <div class="graph-container">
+          <div id="chartContainer">
+            <canvas id="solarChart"></canvas>
+          </div>
         </div>
         <div class="graph-controls">
           <button class="btn btn-primary" onclick="analyzeData()">
@@ -385,30 +421,105 @@
     </div>
   </div>
 
+  <!-- Manual Input Modal -->
+  <div class="modal" id="manualInputModal">
+    <div class="modal-content">
+      <h2 style="margin-bottom: 20px;">Manual Data Input</h2>
+      <p style="color: #718096; margin-bottom: 20px;">
+        Enter voltage and current values (comma or space separated):<br>
+        Format: Voltage, Current (one pair per line)
+      </p>
+      <textarea class="data-input" id="manualDataInput" placeholder="0.0, 3.20
+0.1, 3.15
+0.2, 3.10
+0.3, 3.00
+0.4, 2.80
+0.5, 2.20
+0.55, 1.50
+0.6, 0.80
+0.62, 0.00"></textarea>
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" onclick="closeManualInput()">Cancel</button>
+        <button class="btn btn-primary" onclick="processManualData()">Process Data</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let currentUploadType = 'file';
     let chart = null;
+    let currentData = null;
 
     function setUploadType(type) {
       currentUploadType = type;
-      document.querySelectorAll('.upload-option').forEach(opt => {
-        opt.classList.remove('active');
+      
+      // Update UI
+      document.getElementById('uploadOptionFile').classList.remove('active');
+      document.getElementById('uploadOptionManual').classList.remove('active');
+      document.getElementById(`uploadOption${type.charAt(0).toUpperCase() + type.slice(1)}`).classList.add('active');
+      
+      // Update drop zone text
+      const dropZone = document.getElementById('dropZone');
+      const title = document.getElementById('dropZoneTitle');
+      const subtitle = document.getElementById('dropZoneSubtitle');
+      
+      if (type === 'file') {
+        title.textContent = 'Click to browse or drag and drop';
+        subtitle.textContent = 'PDF, CSV or TXT files supported';
+        dropZone.onclick = handleFileUploadClick;
+      } else {
+        title.textContent = 'Click to enter data manually';
+        subtitle.textContent = 'Open manual input form';
+        dropZone.onclick = openManualInput;
+      }
+    }
+
+    function handleFileUploadClick() {
+      document.getElementById('fileInput').click();
+    }
+
+    function openManualInput() {
+      document.getElementById('manualInputModal').style.display = 'flex';
+    }
+
+    function closeManualInput() {
+      document.getElementById('manualInputModal').style.display = 'none';
+    }
+
+    function processManualData() {
+      const inputText = document.getElementById('manualDataInput').value;
+      const lines = inputText.split('\n').filter(line => line.trim() !== '');
+      const voltage = [];
+      const current = [];
+      
+      lines.forEach(line => {
+        const values = line.split(/[, \t]+/).filter(val => val !== '');
+        if (values.length >= 2) {
+          voltage.push(parseFloat(values[0]));
+          current.push(parseFloat(values[1]));
+        }
       });
-      event.target.classList.add('active');
+      
+      if (voltage.length > 0 && current.length > 0) {
+        currentData = { voltage, current };
+        updateGraph(currentData);
+        calculateParameters(currentData);
+        closeManualInput();
+      } else {
+        alert('Please enter valid voltage and current values.');
+      }
     }
 
     function useSampleData() {
-      // Sample solar cell data
+      // Realistic solar cell sample data
       const sampleData = {
-        voltage: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.55, 0.6, 0.62],
-        current: [3.2, 3.15, 3.1, 3.0, 2.8, 2.2, 1.5, 0.8, 0.0]
+        voltage: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.52, 0.54, 0.56, 0.58, 0.60, 0.62],
+        current: [3.20, 3.18, 3.15, 3.10, 2.95, 2.50, 2.20, 1.80, 1.20, 0.60, 0.20, 0.00]
       };
       
-      processData(sampleData);
+      currentData = sampleData;
       updateGraph(sampleData);
       calculateParameters(sampleData);
-      
-      document.getElementById('graphPlaceholder').style.display = 'none';
     }
 
     function analyzeData() {
@@ -418,12 +529,12 @@
           alert('Please select a file first or use sample data.');
           return;
         }
-        // Here you would process the actual file
-        alert('File processing would happen here. Using sample data for demo.');
+        // For demo purposes, we'll use sample data
+        // In a real application, you would process the actual file here
+        alert('File upload functionality would process the file here. Using sample data for demonstration.');
         useSampleData();
       } else {
-        alert('Manual input interface would open here. Using sample data for demo.');
-        useSampleData();
+        openManualInput();
       }
     }
 
@@ -432,23 +543,21 @@
         chart.destroy();
         chart = null;
       }
-      document.getElementById('graphPlaceholder').style.display = 'flex';
+      currentData = null;
       resetParameters();
-    }
-
-    function processData(data) {
-      // Simulate data processing
-      console.log('Processing data:', data);
+      
+      // Reset chart container
+      const chartContainer = document.getElementById('chartContainer');
+      chartContainer.innerHTML = '<canvas id="solarChart"></canvas>';
     }
 
     function updateGraph(data) {
-      const ctx = document.createElement('canvas');
-      ctx.width = 800;
-      ctx.height = 400;
+      const ctx = document.getElementById('solarChart').getContext('2d');
       
-      const graphContainer = document.getElementById('graphPlaceholder');
-      graphContainer.innerHTML = '';
-      graphContainer.appendChild(ctx);
+      // Destroy existing chart if it exists
+      if (chart) {
+        chart.destroy();
+      }
 
       // Calculate power values
       const power = data.voltage.map((v, i) => v * data.current[i]);
@@ -456,28 +565,33 @@
       chart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: data.voltage,
+          labels: data.voltage.map(v => v.toFixed(2)),
           datasets: [
             {
               label: 'Current (A)',
               data: data.current,
               borderColor: '#667eea',
               backgroundColor: 'rgba(102, 126, 234, 0.1)',
+              borderWidth: 3,
+              tension: 0.4,
               yAxisID: 'y',
-              tension: 0.4
+              fill: false
             },
             {
               label: 'Power (W)',
               data: power,
               borderColor: '#ff6b6b',
               backgroundColor: 'rgba(255, 107, 107, 0.1)',
+              borderWidth: 3,
+              tension: 0.4,
               yAxisID: 'y1',
-              tension: 0.4
+              fill: false
             }
           ]
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           interaction: {
             mode: 'index',
             intersect: false,
@@ -486,7 +600,15 @@
             x: {
               title: {
                 display: true,
-                text: 'Voltage (V)'
+                text: 'Voltage (V)',
+                color: '#4a5568',
+                font: {
+                  size: 14,
+                  weight: '600'
+                }
+              },
+              grid: {
+                color: 'rgba(0,0,0,0.1)'
               }
             },
             y: {
@@ -495,7 +617,15 @@
               position: 'left',
               title: {
                 display: true,
-                text: 'Current (A)'
+                text: 'Current (A)',
+                color: '#4a5568',
+                font: {
+                  size: 14,
+                  weight: '600'
+                }
+              },
+              grid: {
+                color: 'rgba(0,0,0,0.1)'
               }
             },
             y1: {
@@ -504,11 +634,35 @@
               position: 'right',
               title: {
                 display: true,
-                text: 'Power (W)'
+                text: 'Power (W)',
+                color: '#4a5568',
+                font: {
+                  size: 14,
+                  weight: '600'
+                }
               },
               grid: {
                 drawOnChartArea: false,
               },
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                usePointStyle: true,
+                padding: 20,
+                font: {
+                  size: 12
+                }
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(255,255,255,0.9)',
+              titleColor: '#2d3748',
+              bodyColor: '#4a5568',
+              borderColor: '#e2e8f0',
+              borderWidth: 1,
+              cornerRadius: 8
             }
           }
         }
@@ -522,12 +676,16 @@
       const power = data.voltage.map((v, i) => v * data.current[i]);
       const pmax = Math.max(...power); // Maximum power
       const ff = (pmax / (isc * voc) * 100).toFixed(1); // Fill factor
-      const efficiency = (pmax / (0.1 * 1000) * 100).toFixed(1); // Assuming 1000 W/m², 0.1 m² cell
+      
+      // Efficiency calculation (assuming standard test conditions)
+      const cellArea = 0.01; // 100 cm² in m²
+      const irradiance = 1000; // W/m²
+      const efficiency = (pmax / (cellArea * irradiance) * 100).toFixed(1);
 
       // Update UI
-      document.getElementById('iscValue').textContent = isc.toFixed(2);
-      document.getElementById('vocValue').textContent = voc.toFixed(2);
-      document.getElementById('pmaxValue').textContent = pmax.toFixed(2);
+      document.getElementById('iscValue').textContent = isc.toFixed(3);
+      document.getElementById('vocValue').textContent = voc.toFixed(3);
+      document.getElementById('pmaxValue').textContent = pmax.toFixed(3);
       document.getElementById('ffValue').textContent = ff;
       document.getElementById('efficiencyValue').textContent = efficiency;
     }
@@ -548,8 +706,8 @@
         const fileExtension = fileName.split('.').pop().toLowerCase();
         
         if (['csv', 'txt', 'pdf'].includes(fileExtension)) {
-          document.querySelector('.drop-zone h3').textContent = `Selected: ${fileName}`;
-          document.querySelector('.drop-zone p').textContent = 'Click "Analyze Data" to process';
+          document.getElementById('dropZoneTitle').textContent = `Selected: ${fileName}`;
+          document.getElementById('dropZoneSubtitle').textContent = 'Click "Analyze Data" to process';
         } else {
           alert('Please select a CSV, TXT, or PDF file.');
           event.target.value = '';
@@ -558,11 +716,11 @@
     });
 
     // Drag and drop functionality
-    const dropZone = document.querySelector('.drop-zone');
+    const dropZone = document.getElementById('dropZone');
     dropZone.addEventListener('dragover', function(e) {
       e.preventDefault();
       dropZone.style.borderColor = '#667eea';
-      dropZone.style.background = '#e2e8f0';
+      dropZone.style.background = '#edf2f7';
     });
 
     dropZone.addEventListener('dragleave', function(e) {
@@ -584,13 +742,18 @@
         
         if (['csv', 'txt', 'pdf'].includes(fileExtension)) {
           document.getElementById('fileInput').files = files;
-          document.querySelector('.drop-zone h3').textContent = `Selected: ${fileName}`;
-          document.querySelector('.drop-zone p').textContent = 'Click "Analyze Data" to process';
+          document.getElementById('dropZoneTitle').textContent = `Selected: ${fileName}`;
+          document.getElementById('dropZoneSubtitle').textContent = 'Click "Analyze Data" to process';
         } else {
           alert('Please drop a CSV, TXT, or PDF file.');
         }
       }
     });
+
+    // Initialize with sample data
+    window.onload = function() {
+      useSampleData();
+    };
   </script>
 </body>
 </html>
