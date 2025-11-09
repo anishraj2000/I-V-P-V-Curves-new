@@ -11,11 +11,16 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
       background-color: #0d1117;
       color: #e6edf3;
       font-family: 'Poppins', sans-serif;
-      margin: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -31,12 +36,15 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      text-align: center;
     }
 
     p {
       font-size: 1rem;
       color: #8b949e;
       margin-bottom: 30px;
+      text-align: center;
+      max-width: 600px;
     }
 
     .container {
@@ -44,30 +52,40 @@
       padding: 30px;
       border-radius: 12px;
       box-shadow: 0 0 15px rgba(0,0,0,0.3);
-      width: 90%;
-      max-width: 800px;
+      width: 100%;
+      max-width: 900px;
       text-align: center;
+      margin-bottom: 20px;
     }
 
-    input[type="file"], button {
-      margin: 10px 5px;
-      padding: 10px 20px;
-      border-radius: 6px;
-      border: none;
-      outline: none;
-      font-size: 1rem;
+    .input-group {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
     }
 
     input[type="file"] {
       background-color: #0d1117;
       color: #e6edf3;
+      border: 1px solid #30363d;
+      padding: 10px 15px;
+      border-radius: 6px;
       cursor: pointer;
+      font-family: 'Poppins', sans-serif;
     }
 
     button {
       background-color: #238636;
       color: #fff;
+      border: none;
+      padding: 10px 25px;
+      border-radius: 6px;
       cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      font-size: 1rem;
       transition: background 0.2s;
     }
 
@@ -75,17 +93,44 @@
       background-color: #2ea043;
     }
 
-    canvas {
-      margin-top: 30px;
-      background-color: #0d1117;
+    .charts-container {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      width: 100%;
+    }
+
+    .chart-wrapper {
+      background: #0d1117;
       border-radius: 10px;
-      padding: 10px;
+      padding: 20px;
+      border: 1px solid #30363d;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 300px !important;
     }
 
     footer {
-      margin-top: 30px;
+      margin-top: 20px;
       font-size: 0.9rem;
       color: #8b949e;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+      }
+      
+      h1 {
+        font-size: 1.8rem;
+      }
+      
+      .input-group {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -94,32 +139,49 @@
   <p>Upload your CSV file or use default data to visualize IV and PV relationships.</p>
 
   <div class="container">
-    <input type="file" id="fileInput" accept=".csv">
-    <button onclick="generateGraphs()">Plot Graphs</button>
+    <div class="input-group">
+      <input type="file" id="fileInput" accept=".csv">
+      <button onclick="generateGraphs()">Plot Graphs</button>
+    </div>
 
-    <canvas id="ivCurve" height="200"></canvas>
-    <canvas id="pvCurve" height="200"></canvas>
+    <div class="charts-container">
+      <div class="chart-wrapper">
+        <canvas id="ivCurve"></canvas>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="pvCurve"></canvas>
+      </div>
+    </div>
   </div>
 
   <footer>Developed by Anish Raj | Mini Project</footer>
 
   <script>
+    // Initialize Lucide icons
     lucide.createIcons();
+
+    let ivChart = null;
+    let pvChart = null;
 
     function generateGraphs() {
       const ivCtx = document.getElementById('ivCurve').getContext('2d');
       const pvCtx = document.getElementById('pvCurve').getContext('2d');
 
-      const voltage = [0, 2, 4, 6, 8, 10];
-      const current = [5, 4.5, 3.5, 2, 1, 0];
+      // Sample data
+      const voltage = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
+      const current = [5.0, 4.8, 4.5, 4.0, 3.2, 2.0, 1.5, 1.0, 0.5, 0.2, 0.0];
       const power = voltage.map((v, i) => v * current[i]);
 
       // Destroy existing charts if they exist
-      if (window.ivChart) window.ivChart.destroy();
-      if (window.pvChart) window.pvChart.destroy();
+      if (ivChart) {
+        ivChart.destroy();
+      }
+      if (pvChart) {
+        pvChart.destroy();
+      }
 
       // IV Curve Chart
-      window.ivChart = new Chart(ivCtx, {
+      ivChart = new Chart(ivCtx, {
         type: 'line',
         data: {
           labels: voltage,
@@ -128,21 +190,41 @@
             data: current,
             borderColor: '#58a6ff',
             backgroundColor: 'rgba(88, 166, 255, 0.1)',
+            borderWidth: 3,
             tension: 0.4,
-            fill: true
+            fill: true,
+            pointBackgroundColor: '#58a6ff',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 5
           }]
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             title: {
               display: true,
-              text: 'IV Curve',
+              text: 'IV Characteristics Curve',
               color: '#e6edf3',
-              font: { size: 16 }
+              font: { 
+                size: 18,
+                weight: '600'
+              },
+              padding: 20
             },
             legend: {
-              labels: { color: '#e6edf3' }
+              labels: { 
+                color: '#e6edf3',
+                font: { size: 14 }
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(13, 17, 23, 0.9)',
+              titleColor: '#58a6ff',
+              bodyColor: '#e6edf3',
+              borderColor: '#30363d',
+              borderWidth: 1
             }
           },
           scales: {
@@ -150,26 +232,40 @@
               title: {
                 display: true,
                 text: 'Voltage (V)',
-                color: '#8b949e'
+                color: '#8b949e',
+                font: { size: 14, weight: '600' }
               },
-              ticks: { color: '#8b949e' },
-              grid: { color: 'rgba(139, 148, 158, 0.2)' }
+              ticks: { 
+                color: '#8b949e',
+                font: { size: 12 }
+              },
+              grid: { 
+                color: 'rgba(139, 148, 158, 0.2)',
+                borderColor: 'rgba(139, 148, 158, 0.5)'
+              }
             },
             y: {
               title: {
                 display: true,
                 text: 'Current (A)',
-                color: '#8b949e'
+                color: '#8b949e',
+                font: { size: 14, weight: '600' }
               },
-              ticks: { color: '#8b949e' },
-              grid: { color: 'rgba(139, 148, 158, 0.2)' }
+              ticks: { 
+                color: '#8b949e',
+                font: { size: 12 }
+              },
+              grid: { 
+                color: 'rgba(139, 148, 158, 0.2)',
+                borderColor: 'rgba(139, 148, 158, 0.5)'
+              }
             }
           }
         }
       });
 
       // PV Curve Chart
-      window.pvChart = new Chart(pvCtx, {
+      pvChart = new Chart(pvCtx, {
         type: 'line',
         data: {
           labels: voltage,
@@ -178,21 +274,41 @@
             data: power,
             borderColor: '#ff6b6b',
             backgroundColor: 'rgba(255, 107, 107, 0.1)',
+            borderWidth: 3,
             tension: 0.4,
-            fill: true
+            fill: true,
+            pointBackgroundColor: '#ff6b6b',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 5
           }]
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             title: {
               display: true,
-              text: 'PV Curve',
+              text: 'PV Characteristics Curve',
               color: '#e6edf3',
-              font: { size: 16 }
+              font: { 
+                size: 18,
+                weight: '600'
+              },
+              padding: 20
             },
             legend: {
-              labels: { color: '#e6edf3' }
+              labels: { 
+                color: '#e6edf3',
+                font: { size: 14 }
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(13, 17, 23, 0.9)',
+              titleColor: '#ff6b6b',
+              bodyColor: '#e6edf3',
+              borderColor: '#30363d',
+              borderWidth: 1
             }
           },
           scales: {
@@ -200,27 +316,53 @@
               title: {
                 display: true,
                 text: 'Voltage (V)',
-                color: '#8b949e'
+                color: '#8b949e',
+                font: { size: 14, weight: '600' }
               },
-              ticks: { color: '#8b949e' },
-              grid: { color: 'rgba(139, 148, 158, 0.2)' }
+              ticks: { 
+                color: '#8b949e',
+                font: { size: 12 }
+              },
+              grid: { 
+                color: 'rgba(139, 148, 158, 0.2)',
+                borderColor: 'rgba(139, 148, 158, 0.5)'
+              }
             },
             y: {
               title: {
                 display: true,
                 text: 'Power (W)',
-                color: '#8b949e'
+                color: '#8b949e',
+                font: { size: 14, weight: '600' }
               },
-              ticks: { color: '#8b949e' },
-              grid: { color: 'rgba(139, 148, 158, 0.2)' }
+              ticks: { 
+                color: '#8b949e',
+                font: { size: 12 }
+              },
+              grid: { 
+                color: 'rgba(139, 148, 158, 0.2)',
+                borderColor: 'rgba(139, 148, 158, 0.5)'
+              }
             }
           }
         }
       });
     }
 
-    // Generate graphs on page load
-    window.onload = generateGraphs;
+    // Generate graphs when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      generateGraphs();
+    });
+
+    // Handle file upload
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        // Here you can add code to parse CSV file and update charts
+        console.log('File selected:', file.name);
+        alert('File uploaded: ' + file.name + '\nCSV parsing functionality can be added here.');
+      }
+    });
   </script>
 </body>
 </html>
