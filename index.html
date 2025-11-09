@@ -112,4 +112,115 @@
 
       const voltage = [0, 2, 4, 6, 8, 10];
       const current = [5, 4.5, 3.5, 2, 1, 0];
-      const power = voltage
+      const power = voltage.map((v, i) => v * current[i]);
+
+      // Destroy existing charts if they exist
+      if (window.ivChart) window.ivChart.destroy();
+      if (window.pvChart) window.pvChart.destroy();
+
+      // IV Curve Chart
+      window.ivChart = new Chart(ivCtx, {
+        type: 'line',
+        data: {
+          labels: voltage,
+          datasets: [{
+            label: 'Current (A)',
+            data: current,
+            borderColor: '#58a6ff',
+            backgroundColor: 'rgba(88, 166, 255, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'IV Curve',
+              color: '#e6edf3',
+              font: { size: 16 }
+            },
+            legend: {
+              labels: { color: '#e6edf3' }
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Voltage (V)',
+                color: '#8b949e'
+              },
+              ticks: { color: '#8b949e' },
+              grid: { color: 'rgba(139, 148, 158, 0.2)' }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Current (A)',
+                color: '#8b949e'
+              },
+              ticks: { color: '#8b949e' },
+              grid: { color: 'rgba(139, 148, 158, 0.2)' }
+            }
+          }
+        }
+      });
+
+      // PV Curve Chart
+      window.pvChart = new Chart(pvCtx, {
+        type: 'line',
+        data: {
+          labels: voltage,
+          datasets: [{
+            label: 'Power (W)',
+            data: power,
+            borderColor: '#ff6b6b',
+            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'PV Curve',
+              color: '#e6edf3',
+              font: { size: 16 }
+            },
+            legend: {
+              labels: { color: '#e6edf3' }
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Voltage (V)',
+                color: '#8b949e'
+              },
+              ticks: { color: '#8b949e' },
+              grid: { color: 'rgba(139, 148, 158, 0.2)' }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Power (W)',
+                color: '#8b949e'
+              },
+              ticks: { color: '#8b949e' },
+              grid: { color: 'rgba(139, 148, 158, 0.2)' }
+            }
+          }
+        }
+      });
+    }
+
+    // Generate graphs on page load
+    window.onload = generateGraphs;
+  </script>
+</body>
+</html>
